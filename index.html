@@ -1,0 +1,442 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Paint Colour Assistant</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a phone-sized chat beside a "behind the scenes" panel; stacks on narrow screens */
+:root{--bg:#F3F0FA;--surface:#FFFFFF;--surface2:#F8F6FC;--ink:#221A33;--muted:#62587A;--line:#E2DCEF;
+--accent:#4B2E83;--accent-d:#3A2266;--accent-text:#3A2266;--tint:#EEE7FA;--stat:#F5F1FB;
+--coral:#B7791F;--coral-bg:#FFF8EA;--banner-bg:#2A1B47;--banner-fg:#FFFFFF;--shadow:rgba(31,42,55,.18)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14101C;--surface:#1F1A2B;--surface2:#191524;--ink:#ECE7F5;--muted:#A79FBA;--line:#352D47;
+--accent:#6A4BB0;--accent-d:#7E61C4;--accent-text:#C4B2EE;--tint:#2E2545;--stat:#272036;
+--coral:#E8B04E;--coral-bg:#33281A;--banner-bg:#0E0B14;--banner-fg:#E6ECF0;--shadow:rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14101C;--surface:#1F1A2B;--surface2:#191524;--ink:#ECE7F5;--muted:#A79FBA;--line:#352D47;
+--accent:#6A4BB0;--accent-d:#7E61C4;--accent-text:#C4B2EE;--tint:#2E2545;--stat:#272036;
+--coral:#E8B04E;--coral-bg:#33281A;--banner-bg:#0E0B14;--banner-fg:#E6ECF0;--shadow:rgba(0,0,0,.5);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;color:var(--ink);background:var(--bg);line-height:1.4}
+.banner{background:var(--banner-bg);color:var(--banner-fg);font-size:13px;padding-block:9px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));text-align:center}
+.app{max-width:1000px;margin:0 auto;padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:nowrap}
+@media (max-width:620px){.app{flex-wrap:wrap}}
+.phone{flex:0 1 390px;min-width:320px;max-width:100%;height:700px;background:var(--surface);border-radius:28px;box-shadow:0 10px 40px var(--shadow);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line)}
+.hdr{background:linear-gradient(135deg,#4B2E83,#7A3E9D);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;overflow:hidden;flex:none}
+.avatar i:nth-child(1){background:#C9B8DA}.avatar i:nth-child(2){background:#F2C14E}.avatar i:nth-child(3){background:#CF7B5A}.avatar i:nth-child(4){background:#8A9A5B}
+.hdr .t{flex:1;min-width:0}
+.hdr .t b{display:block;font-size:16px}
+.hdr .t span{font-size:12px;opacity:.92}
+.ai{display:inline-block;background:#F2C14E;color:#2A1B47;font-weight:700;font-size:10px;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.person{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.75);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;flex:none}
+.person:hover,.person:focus-visible{background:#fff;color:#4B2E83}
+#chat{flex:1;overflow-y:auto;padding:14px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.msg{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14.5px;word-wrap:break-word}
+.msg.bot{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-top-left-radius:4px}
+.msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-top-right-radius:4px}
+.msg.card{max-width:96%;width:96%;padding:10px}
+.typing{display:flex;gap:4px;padding:12px 14px}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing span{animation:none}}
+#chips{padding:8px 12px 4px;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border-top:1px solid var(--line);min-height:8px}
+.chip{background:var(--surface);border:1.5px solid var(--accent-d);color:var(--accent-text);border-radius:999px;padding:7px 12px;font-size:13.5px;cursor:pointer;font-weight:600}
+.chip:hover,.chip:focus-visible{background:var(--tint)}
+form.in{display:flex;gap:8px;padding:8px 12px 12px;background:var(--surface)}
+form.in input{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:999px;padding:10px 14px;font-size:14.5px;min-width:0}
+form.in input:focus,.card input:focus,.card select:focus,button:focus-visible{outline:2px solid var(--accent-d);outline-offset:1px}
+form.in button{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:0 16px;font-weight:700;cursor:pointer}
+form.in button:hover,.btn:hover{background:var(--accent-d)}
+.room svg{width:100%;height:auto;border-radius:10px;display:block}
+.sw{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.sw button{flex:1 1 70px;border:2px solid transparent;background:var(--surface);border-radius:10px;padding:4px;cursor:pointer;font-size:11.5px;color:var(--ink)}
+.sw button i{display:block;height:34px;border-radius:7px;border:1px solid rgba(128,128,128,.35);margin-bottom:3px}
+.sw button[aria-pressed="true"]{border-color:var(--accent-d)}
+.cap{font-size:13px;color:var(--muted);margin-top:6px}
+.card label{display:block;font-size:12.5px;color:var(--muted);margin:6px 0 2px}
+.card .row{display:flex;gap:8px}
+.card input,.card select{width:100%;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:8px;padding:8px;font-size:14px}
+.btn{margin-top:10px;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px}
+.res{font-size:20px;font-weight:800;color:var(--accent-text)}
+.dealer{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;background:var(--surface)}
+.dealer b{display:block}
+.tag{display:inline-block;font-size:11px;background:var(--tint);color:var(--accent-text);border-radius:999px;padding:1px 8px;margin-top:3px;font-weight:600}
+.handoff{border:1.5px dashed var(--coral);border-radius:10px;padding:10px;background:var(--coral-bg)}
+.handoff h4{margin:0 0 6px;font-size:14px;color:var(--coral)}
+.handoff dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px}
+.handoff dt{color:var(--muted)}.handoff dd{margin:0;font-weight:600}
+aside.panel{order:-1;flex:0 1 310px;min-width:240px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+aside h2{font-size:16px;margin:0 0 4px}
+aside p.sub{margin:0 0 12px;font-size:13px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--stat);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:22px;color:var(--accent-text);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+aside h3{font-size:13px;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+#log{list-style:none;margin:0;padding:0;font-size:12.5px;max-height:190px;overflow:auto}
+#log li{padding:5px 0;border-bottom:1px solid var(--line)}
+#log li b{color:var(--accent-text)}
+.rules{margin:0;padding-left:18px;font-size:13px}
+.rules li{margin-bottom:4px}
+.reset{margin-top:12px;background:var(--surface);border:1.5px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;width:100%}
+.reset:hover{background:var(--stat)}
+.wm{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:40px 80px;transform:rotate(-18deg) scale(1.4);opacity:.07;font:800 72px/1 system-ui,sans-serif;color:var(--accent);letter-spacing:.02em;user-select:none}
+.banner,.app{position:relative;z-index:1}
+</style>
+<div class="wm" aria-hidden="true"><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span><span>Dulux</span></div>
+<div class="banner">Student concept prototype for a Dulux class assignment. Not affiliated with or endorsed by Dulux. Shade names, dealers and figures are samples; replies are scripted.</div>
+<div class="app">
+  <section class="phone" aria-label="Colour assistant chat">
+    <div class="hdr">
+      <div class="avatar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="t"><b>Colour Assistant <span class="ai">AI</span></b><span>Dulux concept (class project)</span></div>
+      <button class="person" id="personBtn" type="button">Talk to a person</button>
+    </div>
+    <div id="chat" role="log" aria-live="polite"></div>
+    <div id="chips"></div>
+    <form class="in" id="f" autocomplete="off">
+      <input id="inp" type="text" placeholder="Type a message" aria-label="Type a message">
+      <button type="submit">Send</button>
+    </form>
+  </section>
+
+  <aside class="panel" aria-label="Behind the scenes">
+    <h2>Behind the scenes</h2>
+    <p class="sub">What the bot is doing as you chat, and the KPIs it would report.</p>
+    <div class="stats">
+      <div class="stat"><b id="s-msgs">0</b><span>Customer messages</span></div>
+      <div class="stat"><b id="s-res">0</b><span>Resolved by bot</span></div>
+      <div class="stat"><b id="s-hum">0</b><span>Handed to human</span></div>
+      <div class="stat"><b id="s-miss">0</b><span>Not understood</span></div>
+      <div class="stat"><b id="s-help">0</b><span>Helpful votes</span></div>
+      <div class="stat"><b id="s-rate">0%</b><span>Hand-off rate</span></div>
+    </div>
+    <h3>Live log</h3>
+    <ul id="log" aria-live="polite"><li>Waiting for the first message.</li></ul>
+    <h3>Design rules in action</h3>
+    <ul class="rules">
+      <li>Says it is an AI, never poses as a person</li>
+      <li>Answers only from data; no guessed prices</li>
+      <li>Hands over on request, on damp or other complex issues, or after 2 misses</li>
+      <li>Passes a chat summary so customers never repeat themselves</li>
+    </ul>
+    <button class="reset" id="reset" type="button">Restart demo</button>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var chat=document.getElementById('chat'), chipsEl=document.getElementById('chips'),
+      form=document.getElementById('f'), inp=document.getElementById('inp'), logEl=document.getElementById('log');
+
+  var SHADES=[
+    {n:'Soft Sage',h:'#A9BFA8',m:['calm','fresh']},
+    {n:'Morning Mist',h:'#C9D6DF',m:['calm','fresh']},
+    {n:'Sky Whisper',h:'#B7D3E6',m:['calm','fresh']},
+    {n:'Ocean Calm',h:'#5F9AA6',m:['calm','bold']},
+    {n:'Warm Sand',h:'#E3CDA9',m:['cozy']},
+    {n:'Blush Clay',h:'#E3B7A5',m:['cozy']},
+    {n:'Terracotta Glow',h:'#CF7B5A',m:['cozy','bold']},
+    {n:'Buttercream',h:'#F4E3A1',m:['fresh','cozy']},
+    {n:'Olive Grove',h:'#8A9A5B',m:['bold','calm']},
+    {n:'Lilac Haze',h:'#C9B8DA',m:['calm','bold']},
+    {n:'Charcoal Night',h:'#3E4651',m:['bold']},
+    {n:'Pure White',h:'#F6F6F2',m:['fresh']}
+  ];
+  var ROOMS=['Bedroom','Living room','Kitchen','Kids room','Exterior'];
+  var MOODS=['Calm','Cozy','Fresh','Bold'];
+  var DEALERS=[
+    {n:'Sample Paint Mart',d:'1.2 km',s:'Most shades in stock'},
+    {n:'Demo Colour Centre',d:'2.8 km',s:'Painter booking available'},
+    {n:'Example Hardware and Paints',d:'4.1 km',s:'Tinting machine on site'}
+  ];
+  var COVER=12; // sample coverage in m2 per litre; a real bot reads this from the product data sheet
+
+  var S, q, expect;
+  function fresh(){
+    S={room:null,mood:null,shade:null,area:null,litres:null,pin:null,issue:null,misses:0,
+       stats:{msgs:0,resolved:0,human:0,miss:0,helpful:0}};
+    q=Promise.resolve(); expect=null;
+  }
+  fresh();
+
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function toEnd(){chat.scrollTop=chat.scrollHeight}
+  function el(tag,cls,html){var d=document.createElement(tag);if(cls)d.className=cls;if(html!=null)d.innerHTML=html;return d}
+
+  function stats(){
+    var s=S.stats;
+    document.getElementById('s-msgs').textContent=s.msgs;
+    document.getElementById('s-res').textContent=s.resolved;
+    document.getElementById('s-hum').textContent=s.human;
+    document.getElementById('s-miss').textContent=s.miss;
+    document.getElementById('s-help').textContent=s.helpful;
+    var conv=s.resolved+s.human;
+    document.getElementById('s-rate').textContent=conv?Math.round(100*s.human/conv)+'%':'0%';
+  }
+  function log(intent,src){
+    if(logEl.firstChild && logEl.firstChild.textContent==='Waiting for the first message.') logEl.innerHTML='';
+    var li=el('li',null,'<b>'+esc(intent)+'</b><br>'+esc(src));
+    logEl.insertBefore(li,logEl.firstChild);
+    while(logEl.children.length>8) logEl.removeChild(logEl.lastChild);
+  }
+  function resolved(){S.stats.resolved++;stats()}
+
+  function userSays(t){S.stats.msgs++;chat.appendChild(el('div','msg user',esc(t)));toEnd();stats()}
+  function say(content,delay){
+    q=q.then(function(){return new Promise(function(res){
+      var t=el('div','msg bot typing','<span></span><span></span><span></span>');
+      chat.appendChild(t);toEnd();
+      setTimeout(function(){
+        t.remove();
+        var node=typeof content==='function'?content():el('div','msg bot',content);
+        chat.appendChild(node);toEnd();res();
+      },delay==null?500:delay);
+    })});
+  }
+  function setChips(list){
+    chipsEl.innerHTML='';
+    list.forEach(function(c){
+      var b=el('button','chip',esc(c[0]));b.type='button';
+      b.onclick=function(){chipsEl.innerHTML='';userSays(c[0]);c[1]()};
+      chipsEl.appendChild(b);
+    });
+    toEnd();
+  }
+  function chips(list){q=q.then(function(){setChips(list)})}
+
+  var MAIN;
+
+  function greet(){
+    say("Hi, I'm the AI colour assistant for this concept. I can suggest colours, estimate how much paint you need, find stores and help with wall problems. For anything complex I'll bring in a human advisor.",400);
+    say('What would you like to do?',350);
+    chips(MAIN);
+  }
+
+  // ---- colour flow
+  function colourStart(){
+    log('colour_recommendation','Source: shade library (sample)');
+    say('Great. Which room are we painting?');
+    chips(ROOMS.map(function(r){return [r,function(){S.room=r.toLowerCase();pickMood()}]}));
+  }
+  function pickMood(){
+    say('What feeling do you want in the '+esc(S.room)+'?');
+    chips(MOODS.map(function(m){return [m,function(){showShades(m.toLowerCase())}]}));
+  }
+  function showShades(mood){
+    S.mood=mood;
+    var list=SHADES.filter(function(s){return s.m.indexOf(mood)>-1}).slice(0,4);
+    S.shade=list[0];
+    say('For a '+esc(mood)+' '+esc(S.room)+', these four work well. Tap a swatch to preview it on the wall.');
+    say(function(){return swatchCard(list)},650);
+    say('Want me to work out how much paint you need, or find a store?',400);
+    chips([
+      ['How much paint do I need?',qtyStart],
+      ['Try another mood',pickMood],
+      ['Find a dealer',dealerStart],
+      ['Rate this chat',rate]
+    ]);
+    q=q.then(resolved);
+  }
+  function roomSvg(){
+    return '<svg viewBox="0 0 300 170" role="img" aria-label="Room preview with the chosen wall colour">'+
+      '<rect class="wall" width="300" height="122" fill="#fff"/>'+
+      '<rect y="122" width="300" height="48" fill="#C9B79B"/>'+
+      '<rect y="116" width="300" height="8" fill="#fff" opacity=".9"/>'+
+      '<rect x="205" y="24" width="68" height="62" fill="#DCEBF5" stroke="#fff" stroke-width="5"/>'+
+      '<line x1="239" y1="24" x2="239" y2="86" stroke="#fff" stroke-width="3"/>'+
+      '<rect x="28" y="88" width="124" height="38" rx="9" fill="#4B5563"/>'+
+      '<rect x="28" y="70" width="124" height="28" rx="9" fill="#6B7280"/>'+
+      '<rect x="18" y="82" width="20" height="44" rx="8" fill="#4B5563"/>'+
+      '<rect x="142" y="82" width="20" height="44" rx="8" fill="#4B5563"/>'+
+      '<rect x="180" y="118" width="84" height="10" rx="5" fill="#8B7355"/>'+
+    '</svg>';
+  }
+  function swatchCard(list){
+    var card=el('div','msg bot card');
+    var wrap=el('div','room',roomSvg());
+    var wall=wrap.querySelector('.wall');
+    var cap=el('div','cap');
+    var sw=el('div','sw');
+    function apply(s,btn){
+      wall.setAttribute('fill',s.h);S.shade=s;
+      cap.textContent='Previewing: '+s.n+' on your '+S.room;
+      Array.prototype.forEach.call(sw.children,function(b){b.setAttribute('aria-pressed',b===btn?'true':'false')});
+      log('shade_preview','Source: shade library (sample), '+s.n);
+    }
+    list.forEach(function(s,i){
+      var b=el('button',null,'<i style="background:'+s.h+'"></i>'+esc(s.n));
+      b.type='button';b.setAttribute('aria-pressed','false');
+      b.onclick=function(){apply(s,b)};
+      sw.appendChild(b);
+    });
+    card.appendChild(wrap);card.appendChild(sw);card.appendChild(cap);
+    apply(list[0],sw.children[0]);
+    return card;
+  }
+
+  // ---- quantity flow
+  function qtyStart(){
+    log('paint_quantity','Source: coverage per litre (sample '+COVER+' m2/L)');
+    say('Sure. Tell me the room size in metres.');
+    say(function(){return qtyCard()},500);
+  }
+  function qtyCard(){
+    var card=el('div','msg bot card',
+      '<div class="row"><div><label for="ql">Length (m)</label><input id="ql" type="number" min="1" max="50" step="0.1" value="4"></div>'+
+      '<div><label for="qw">Width (m)</label><input id="qw" type="number" min="1" max="50" step="0.1" value="3.5"></div>'+
+      '<div><label for="qh">Height (m)</label><input id="qh" type="number" min="2" max="10" step="0.1" value="3"></div></div>'+
+      '<label for="qc">Coats</label><select id="qc"><option>1</option><option selected>2</option><option>3</option></select>'+
+      '<button class="btn" type="button">Calculate</button><div class="cap" role="status"></div>');
+    var btn=card.querySelector('.btn'), out=card.querySelector('.cap');
+    btn.onclick=function(){
+      var L=parseFloat(card.querySelector('#ql').value),W=parseFloat(card.querySelector('#qw').value),
+          H=parseFloat(card.querySelector('#qh').value),C=parseInt(card.querySelector('#qc').value,10);
+      if(!(L>0&&W>0&&H>0)||L>50||W>50||H>10){out.textContent='Please enter sensible sizes in metres.';return}
+      var area=Math.max(2*(L+W)*H-4,1); // 4 m2 allowance for a door and a window
+      var litres=area*C/COVER;
+      S.area=Math.round(area);S.litres=Math.ceil(litres);
+      userSays('Room '+L+' x '+W+' x '+H+' m, '+C+' coat'+(C>1?'s':''));
+      chipsEl.innerHTML='';
+      say('Painted wall area is about <b>'+S.area+' m2</b> after a door and window allowance. For '+C+' coat'+(C>1?'s':'')+' you need about <span class="res">'+litres.toFixed(1)+' L</span>.<br><span class="cap">Suggested packs: '+packs(S.litres)+'. Sample coverage of '+COVER+' m2 per litre; the real figure comes from the product data sheet.</span>');
+      chips([['Pick a colour',colourStart],['Find a dealer',dealerStart],['Rate this chat',rate]]);
+      q=q.then(resolved);
+    };
+    return card;
+  }
+  function packs(l){
+    var sizes=[20,10,4,1],out=[],left=l;
+    sizes.forEach(function(s){var n=Math.floor(left/s);if(n>0){out.push(n+' x '+s+' L');left-=n*s}});
+    return out.join(' + ');
+  }
+
+  // ---- dealer flow
+  function dealerStart(){
+    log('dealer_lookup','Source: dealer network and stock (sample)');
+    expect='pin';
+    say('Share your PIN code or area and I will show nearby stores.');
+    chips([['Use 400001',function(){expect=null;showDealers('400001')}]]);
+  }
+  function showDealers(pin){
+    S.pin=pin;expect=null;
+    say('Here are stores near '+esc(pin)+' (sample data).');
+    say(function(){
+      var card=el('div','msg bot card');
+      DEALERS.forEach(function(d){card.appendChild(el('div','dealer','<b>'+esc(d.n)+'</b>'+esc(d.d)+' away<br><span class="tag">'+esc(d.s)+'</span>'))});
+      card.appendChild(el('div','cap','In a real version, stock and live prices come from the dealer system, so nothing here is guessed.'));
+      return card;
+    },600);
+    chips([['Pick a colour',colourStart],['How much paint?',qtyStart],['Rate this chat',rate]]);
+    q=q.then(resolved);
+  }
+
+  // ---- wall problems
+  function problemStart(){
+    log('wall_problem','Source: application guide (sample)');
+    say('What are you seeing on the wall?');
+    chips([['Damp patches',dampFlow],['Peeling paint',peelFlow],['Patchy finish',patchyFlow],['Something else',function(){human('complex or unclear wall problem')}]]);
+  }
+  function peelFlow(){
+    S.issue='peeling paint';
+    log('wall_problem: peeling','Source: application guide (sample)');
+    say('Peeling usually comes from poor surface prep or moisture behind the paint. General steps: scrape off loose paint, let the wall dry fully, sand lightly, fill cracks, apply a suitable primer, then repaint with even coats.');
+    say("If it keeps coming back, there may be a moisture problem, and I'd rather connect you to an advisor than guess.",450);
+    chips([['Connect me to an advisor',function(){human('recurring peeling')}],['That helps',rate]]);
+    q=q.then(resolved);
+  }
+  function patchyFlow(){
+    S.issue='patchy finish';
+    log('wall_problem: patchy','Source: application guide (sample)');
+    say('Patchy walls are often caused by uneven prep, too few coats, or drying marks where wet edges were missed. Prime the patches, keep a wet edge while painting, and apply two even coats.');
+    chips([['Connect me to an advisor',function(){human('patchy finish after repainting')}],['That helps',rate]]);
+    q=q.then(resolved);
+  }
+  function dampFlow(){
+    S.issue='damp patches';
+    log('wall_problem: damp','Rule: damp is a complex issue, escalate');
+    say("Damp usually means water is getting into the wall, and painting over it won't fix the cause. This needs an expert, so I'm bringing in a human advisor.");
+    human('damp patches');
+  }
+
+  // ---- human hand-off
+  function human(reason){
+    S.stats.human++;stats();
+    log('escalation','Reason: '+reason);
+    chipsEl.innerHTML='';
+    say('Connecting you to a colour advisor (demo). I am sharing a summary so you do not have to repeat yourself.',450);
+    say(function(){
+      var d=function(k,v){return '<dt>'+k+'</dt><dd>'+esc(v||'Not discussed')+'</dd>'};
+      var html='<div class="handoff"><h4>Hand-off summary for the advisor</h4><dl>'+
+        d('Reason',reason)+d('Room',S.room)+d('Mood',S.mood)+d('Shade',S.shade&&S.shade.n)+
+        d('Wall area',S.area?S.area+' m2 (about '+S.litres+' L)':null)+d('PIN code',S.pin)+d('Issue',S.issue)+
+        '</dl></div><div class="cap">Estimated wait: about 2 minutes (demo). The advisor sees this chat.</div>';
+      var n=el('div','msg bot card',html);return n;
+    },700);
+    chips([['Back to the menu',function(){say('Welcome back. What would you like to do?');chips(MAIN)}],['Rate this chat',rate]]);
+  }
+
+  // ---- rating
+  function rate(){
+    say('Thanks for chatting. How was this conversation?');
+    chips([
+      ['Helpful',function(){S.stats.helpful++;stats();log('feedback','Customer marked helpful');say('Thank you for the feedback.');chips(MAIN)}],
+      ['Not helpful',function(){
+        log('feedback','Customer marked not helpful');
+        say("Sorry about that. Would you like a human advisor to follow up?");
+        chips([['Yes, connect me',function(){human('customer rated chat not helpful')}],['No thanks',function(){say('Understood. Have a great day.');chips(MAIN)}]]);
+      }]
+    ]);
+  }
+
+  MAIN=[['Pick a colour',colourStart],['How much paint?',qtyStart],['Find a dealer',dealerStart],['Fix a wall problem',problemStart],['Talk to a person',function(){human('customer asked for a person')}]];
+
+  // ---- free text routing
+  function miss(){
+    S.misses++;S.stats.miss++;stats();
+    log('not_understood','Fallback #'+S.misses);
+    if(S.misses>=2){
+      say("I'm still not getting it, and I don't want to keep you going in circles. Let me bring in a human advisor.");
+      human('bot did not understand twice');
+      return;
+    }
+    say("Sorry, I didn't quite get that. You can rephrase it or pick an option below.");
+    chips(MAIN);
+  }
+  function route(t){
+    var l=t.toLowerCase();
+    if(expect==='pin'){showDealers(t);return true}
+    if(/\b(human|person|agent|advisor|representative|someone)\b/.test(l)){human('customer asked for a person');return true}
+    if(/damp|seepage|leak|mould|mold/.test(l)){dampFlow();return true}
+    if(/peel|flak|bubbl|crack/.test(l)){peelFlow();return true}
+    if(/patch|streak|uneven/.test(l)){patchyFlow();return true}
+    if(/dealer|store|shop|near me|nearby/.test(l)){dealerStart();return true}
+    if(/litre|liter|how much|quantity|coverage|area/.test(l)){qtyStart();return true}
+    if(/price|cost|offer|discount/.test(l)){
+      log('price_query','Blocked: no guessing; routed to dealer data');
+      say("Prices change by product, pack size and city, and I don't want to guess. A real version would show live prices from the dealer system.");
+      dealerStart();return true;
+    }
+    if(/colou?r|shade|suggest|recommend|paint my|bedroom|living|kitchen|kids|exterior/.test(l)){colourStart();return true}
+    if(/thank|bye|that helps/.test(l)){rate();return true}
+    if(/^(hi|hello|hey)\b/.test(l)){say('Hello! What would you like to do?');chips(MAIN);return true}
+    return false;
+  }
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var t=inp.value.trim();if(!t)return;
+    inp.value='';chipsEl.innerHTML='';
+    userSays(t);
+    if(route(t)) S.misses=0; else miss();
+  });
+  document.getElementById('personBtn').addEventListener('click',function(){
+    chipsEl.innerHTML='';userSays('Talk to a person');human('customer clicked Talk to a person');
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    chat.innerHTML='';chipsEl.innerHTML='';logEl.innerHTML='<li>Waiting for the first message.</li>';
+    fresh();stats();greet();
+  });
+
+  stats();greet();
+})();
+</script>
+
+</body></html>
